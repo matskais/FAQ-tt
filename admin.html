@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FAQ管理画面</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 20px;
+      color: #2c3e50;
+    }
+    h1 {
+      text-align: center;
+    }
+    .faq-item {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    .keywords {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .keyword-tag {
+      background: #2ecc71;
+      color: white;
+      border-radius: 16px;
+      padding: 5px 10px;
+      font-size: 0.85rem;
+    }
+    .keyword-tag button {
+      margin-left: 5px;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+    .actions {
+      text-align: right;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 15px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 5px 5px;
+    }
+    button.delete {
+      background: #e74c3c;
+    }
+    .top-actions {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .top-actions button {
+      margin: 0 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>FAQ管理画面</h1>
+
+  <div class="top-actions">
+    <button onclick="addFaq()">＋ FAQ追加</button>
+    <button onclick="downloadJson()">faq.jsonとして保存</button>
+    <button onclick="window.open('index.html', '_blank')">ユーザー画面を表示</button>
+  </div>
+
+  <div id="faqContainer"></div>
+
+  <script>
+    let faqData = [];
+
+    function renderFaqs() {
+      const container = document.getElementById("faqContainer");
+      container.innerHTML = "";
+      faqData.forEach((faq, index) => {
+        const div = document.createElement("div");
+        div.className = "faq-item";
+        div.innerHTML = `
+          <input type="text" placeholder="質問" value="${faq.question}" oninput="updateField(${index}, 'question', this.value)">
+          <div class="keywords" id="keywords-${index}">
+            ${(faq.keywords || []).map((kw, kwIdx) => `
+              <span class="keyword-tag">${kw}
+                <button onclick="removeKeyword(${index}, ${kwIdx})">×</button>
+              </span>`).join("")}
+          </div>
+          <input type="text" placeholder="キーワード追加" onkeypress="handleKeywordEnter(event, ${index})">
+          <textarea placeholder="回答">${faq.answer}</textarea>
+          <div class="actions">
+            <button class="delete" onclick="deleteFaq(${index})">削除</button>
+          </div>
+        `;
+        div.querySelector("textarea").addEventListener("input", (e) => {
+          faqData[index].answer = e.target.value;
+        });
+        container.appendChild(div);
+      });
+    }
+
+    function updateField(index, field, value) {
+      faqData[index][field] = value;
+    }
+
+    function handleKeywordEnter(e, index) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const val = e.target.value.trim();
+        if (val) {
+          faqData[index].keywords = faqData[index].keywords || [];
+          faqData[index].keywords.push(val);
+          e.target.value = "";
+          renderFaqs();
+        }
+      }
+    }
+
+    function removeKeyword(faqIndex, keywordIndex) {
+      faqData[faqIndex].keywords.splice(keywordIndex, 1);
+      renderFaqs();
+    }
+
+    function deleteFaq(index) {
+      if (confirm("本当に削除しますか？")) {
+        faqData.splice(index, 1);
+        renderFaqs();
+      }
+    }
+
+    function addFaq() {
+      faqData.push({ question: "", keywords: [], answer: "" });
+      renderFaqs();
+    }
+
+    function downloadJson() {
+      const blob = new Blob([JSON.stringify(faqData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "faq.json";
+      a.click();
+    }
+
+    // 初期データ（必要なら手動で編集）
+    faqData = [
+      {
+        question: "留学費用について教えてください",
+        keywords: ["費用", "料金", "予算", "いくら", "コスト"],
+        answer: "国や期間により異なりますが、短期で50万〜80万円、長期で150万〜300万円程度が一般的です。"
+      },
+      {
+        question: "ビザは必要ですか？",
+        keywords: ["ビザ", "査証", "パスポート", "VISA"],
+        answer: "90日を超える留学にはビザが必要です。国により異なりますので、詳しくはご相談ください。"
+      }
+    ];
+
+    renderFaqs();
+  </script>
+</body>
+</html>
